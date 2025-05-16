@@ -2,6 +2,10 @@
 
 Parser::Parser(std::vector<Token> tokens) : tokens_(std::move(tokens)) {}
 
+std::unique_ptr<Expr> Parser::parse() {
+    return parse_expression();
+}
+
 std::unique_ptr<Expr> Parser::parse_expression() {
     return parse_equality();
 }

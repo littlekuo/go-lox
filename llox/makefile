@@ -1,7 +1,11 @@
 CXX := clang++
-CXXFLAGS := -std=c++17 -Wall -Wextra -g -Iinclude/
-LDFLAGS := 
-LIBS := 
+CXXFLAGS := -std=c++17 -Wall -Wextra -g -Iinclude/ \
+            -isystem$(shell llvm-config --includedir) \
+            -Wno-unused-parameter \
+            $(shell llvm-config --cxxflags)
+			
+LDFLAGS := $(shell llvm-config --ldflags)
+LIBS := $(shell llvm-config --libs core)
 
 SRC_DIR := src
 BUILD_DIR := build

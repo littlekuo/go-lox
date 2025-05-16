@@ -19,7 +19,11 @@ primary        → NUMBER | STRING | "true" | "false" | "nil"
                | "(" expression ")" ;
 */
 
-using ExprResult = std::variant<bool, double, std::string, void *>;
+namespace llvm {
+  class Value;
+}
+
+using ExprResult = std::variant<double, bool, std::string, llvm::Value*, std::monostate>;
 
 class BinaryExpr;
 class GroupingExpr;
@@ -38,7 +42,7 @@ public:
 class Expr {
 public:
   virtual ~Expr() = default;
-  virtual ExprResult accept(class ExprVisitor &visitor) = 0;
+  virtual ExprResult accept(class ExprVisitor &visitor) const = 0;
 };
 
 class BinaryExpr : public Expr {
@@ -50,7 +54,10 @@ private:
 public:
   BinaryExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right,
              Token&& op);
-  virtual ExprResult accept(class ExprVisitor &visitor);
+  const Token& get_op() const;
+  const Expr& get_left() const;
+  const Expr& get_right() const;
+  virtual ExprResult accept(class ExprVisitor &visitor) const override;
 };
 
 class GroupingExpr : public Expr {
@@ -59,7 +66,8 @@ private:
 
 public:
   GroupingExpr(std::unique_ptr<Expr> expr);
-  virtual ExprResult accept(class ExprVisitor &visitor);
+  const Expr& get_expr() const;
+  virtual ExprResult accept(class ExprVisitor &visitor) const override;
 };
 
 class LiteralExpr : public Expr {
@@ -69,7 +77,9 @@ private:
 
 public:
   LiteralExpr(ExprResult&& value, Token&& token);
-  virtual ExprResult accept(class ExprVisitor &visitor);
+  const Token& get_token() const;
+  const ExprResult& get_value() const;
+  virtual ExprResult accept(class ExprVisitor &visitor) const override;
 };
 
 class UnaryExpr : public Expr {
@@ -79,7 +89,9 @@ private:
 
 public:
   UnaryExpr(std::unique_ptr<Expr> right, Token&& op);
-  virtual ExprResult accept(class ExprVisitor &visitor);
+  const Token& get_op() const;
+  const Expr& get_right() const;
+  virtual ExprResult accept(class ExprVisitor &visitor) const override;
 };
 
 #endif
