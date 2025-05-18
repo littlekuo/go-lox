@@ -1,6 +1,8 @@
 #include "ir/ir_generator.h"
+#include "ast/expr.h"
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
+#include <variant>
 
 IRGenerator::IRGenerator()
     : context_(std::make_unique<llvm::LLVMContext>()),
@@ -149,6 +151,9 @@ ExprResult IRGenerator::visit_literal_expr(const LiteralExpr &expr) {
   if (std::holds_alternative<bool>(val)) {
     return llvm::ConstantInt::get(llvm::Type::getInt1Ty(*context_),
                                   std::get<bool>(val));
+  }
+  if (std::holds_alternative<llvm::Value*>(val)) {
+    
   }
   if (std::holds_alternative<std::string>(val)) {
     const auto &str = std::get<std::string>(val);

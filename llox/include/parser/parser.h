@@ -31,6 +31,7 @@ private:
   bool is_at_end();
   Token peek();
   void error(Token token, std::string message);
+  void synchronize();
 };
 
 #endif

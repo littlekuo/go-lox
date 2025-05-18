@@ -1,4 +1,6 @@
 #include "parser/parser.h"
+#include "ast/expr.h"
+#include "parser/token.h"
 
 Parser::Parser(std::vector<Token> tokens) : tokens_(std::move(tokens)) {}
 
@@ -7,14 +9,23 @@ std::unique_ptr<Expr> Parser::parse() {
 }
 
 std::unique_ptr<Expr> Parser::parse_expression() {
-    return parse_equality();
+    auto expr = parse_equality();
+    if(expr == nullptr) {
+        return nullptr;
+    }
 }
 
 std::unique_ptr<Expr> Parser::parse_equality() {
     auto expr = parse_comparison();
+    if(expr == nullptr) {
+        return nullptr;
+    }
     while (match({TokenType::TOKEN_BANG_EQUAL, TokenType::TOKEN_EQUAL_EQUAL})) {
         auto op = previous();
         auto right = parse_comparison();
+        if(right == nullptr) {
+            return nullptr;
+        }
         expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(right), std::move(op));
     }
     return expr;
@@ -22,9 +33,15 @@ std::unique_ptr<Expr> Parser::parse_equality() {
 
 std::unique_ptr<Expr> Parser::parse_comparison() {
     auto expr = parse_term();
+    if(expr == nullptr) {
+        return nullptr;
+    }
     while (match({TokenType::TOKEN_GREATER, TokenType::TOKEN_GREATER_EQUAL, TokenType::TOKEN_LESS, TokenType::TOKEN_LESS_EQUAL})) {
         auto op = previous();
         auto right = parse_term();
+        if (right == nullptr) {
+            return nullptr;
+        }
         expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(right),  std::move(op));
     }
     return expr;
@@ -32,9 +49,15 @@ std::unique_ptr<Expr> Parser::parse_comparison() {
 
 std::unique_ptr<Expr> Parser::parse_term() {
     auto expr = parse_factor();
+    if(expr == nullptr) {
+        return nullptr;
+    }
     while (match({TokenType::TOKEN_MINUS, TokenType::TOKEN_PLUS})) {
         auto op = previous();
         auto right = parse_factor();
+        if(right == nullptr) {
+            return nullptr;
+        }
         expr = std::make_unique<BinaryExpr>(std::move(expr),  std::move(right), std::move(op));
     }
     return expr;
@@ -42,9 +65,15 @@ std::unique_ptr<Expr> Parser::parse_term() {
 
 std::unique_ptr<Expr> Parser::parse_factor() {
     auto expr = parse_unary();
+    if(expr == nullptr) {
+        return nullptr;
+    }
     while (match({TokenType::TOKEN_SLASH, TokenType::TOKEN_STAR})) {
         auto op = previous();
         auto right = parse_unary();
+        if(right == nullptr) {
+            return nullptr;
+        }
         expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(right), std::move(op));
     }
     return expr;
@@ -54,6 +83,9 @@ std::unique_ptr<Expr> Parser::parse_unary() {
     if (match({TokenType::TOKEN_BANG, TokenType::TOKEN_MINUS})) {
         auto op = previous();
         auto right = parse_unary();
+        if(right == nullptr) {
+            return nullptr;
+        }
         return std::make_unique<UnaryExpr>(std::move(right), std::move(op));
     }
     return parse_primary();
@@ -67,7 +99,7 @@ std::unique_ptr<Expr> Parser::parse_primary() {
         return std::make_unique<LiteralExpr>(true, previous());
     }
     if (match({TokenType::TOKEN_NIL})) {
-        return std::make_unique<LiteralExpr>(nullptr, previous());
+        return std::make_unique<LiteralExpr>(LoxValue(), previous());
     }
     if (match({TokenType::TOKEN_NUMBER})) {
         std::string numStr(previous().start, previous().length);
@@ -76,7 +108,8 @@ std::unique_ptr<Expr> Parser::parse_primary() {
     }
     if (match({TokenType::TOKEN_STRING})) {
         std::string str(previous().start, previous().length);
-        return std::make_unique<LiteralExpr>(std::move(str),previous());
+        LoxObject* lox_object = new LoxString(std::move(str));
+        return std::make_unique<LiteralExpr>(lox_object,previous());
     }
     if (match({TokenType::TOKEN_LEFT_PAREN})) {
         auto expr = parse_expression();
@@ -133,4 +166,27 @@ void Parser::error(Token token, std::string message) {
     }
     std::cout << ": " << message << std::endl;
     has_error_ = true;
+}
+
+void Parser::synchronize() {
+    advance();
+
+    while (!is_at_end()) {
+      if (previous().type == TokenType::TOKEN_SEMICOLON) return;
+
+      switch (peek().type) {
+        case TokenType::TOKEN_CLASS:
+        case TokenType::TOKEN_FUN:
+        case TokenType::TOKEN_VAR:
+        case TokenType::TOKEN_FOR:
+        case TokenType::TOKEN_IF:
+        case TokenType::TOKEN_WHILE:
+        case TokenType::TOKEN_PRINT:
+        case TokenType::TOKEN_RETURN:
+          return;
+        default:
+         advance();  
+      }
+
+    }
 }

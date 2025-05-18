@@ -1,6 +1,7 @@
 #ifndef EXPR_H
 #define EXPR_H
 
+#include "ast/lox_value.h"
 #include "parser/token.h"
 #include <iostream>
 #include <memory>
@@ -20,10 +21,10 @@ primary        → NUMBER | STRING | "true" | "false" | "nil"
 */
 
 namespace llvm {
-  class Value;
+class Value;
 }
 
-using ExprResult = std::variant<double, bool, std::string, llvm::Value*, std::monostate>;
+using ExprResult = LoxValue;
 
 class BinaryExpr;
 class GroupingExpr;
@@ -53,10 +54,10 @@ private:
 
 public:
   BinaryExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right,
-             Token&& op);
-  const Token& get_op() const;
-  const Expr& get_left() const;
-  const Expr& get_right() const;
+             Token &&op);
+  const Token &get_op() const;
+  const Expr &get_left() const;
+  const Expr &get_right() const;
   virtual ExprResult accept(class ExprVisitor &visitor) const override;
 };
 
@@ -66,7 +67,7 @@ private:
 
 public:
   GroupingExpr(std::unique_ptr<Expr> expr);
-  const Expr& get_expr() const;
+  const Expr &get_expr() const;
   virtual ExprResult accept(class ExprVisitor &visitor) const override;
 };
 
@@ -76,9 +77,9 @@ private:
   Token token_;
 
 public:
-  LiteralExpr(ExprResult&& value, Token&& token);
-  const Token& get_token() const;
-  const ExprResult& get_value() const;
+  LiteralExpr(ExprResult &&value, Token &&token);
+  const Token &get_token() const;
+  const ExprResult &get_value() const;
   virtual ExprResult accept(class ExprVisitor &visitor) const override;
 };
 
@@ -88,9 +89,9 @@ private:
   Token op_;
 
 public:
-  UnaryExpr(std::unique_ptr<Expr> right, Token&& op);
-  const Token& get_op() const;
-  const Expr& get_right() const;
+  UnaryExpr(std::unique_ptr<Expr> right, Token &&op);
+  const Token &get_op() const;
+  const Expr &get_right() const;
   virtual ExprResult accept(class ExprVisitor &visitor) const override;
 };
 
