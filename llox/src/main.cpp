@@ -10,7 +10,6 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Support/FileSystem.h>
-#include <llvm/TargetParser/Host.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/IR/LegacyPassManager.h> 
 
@@ -65,25 +64,23 @@ void run(const string &source) {
   }
   */
   Parser parser(tokens);
-  if (parser.has_error())
-    return;
-  
   auto expr = parser.parse();
+  if (parser.has_error()) {
+    return;
+  }
   IRGenerator generator;
   generator.generate_ir(*expr);
   if (generator.has_error())
     return;
-  //generator.dump();
+  generator.dump();
   
   llvm::InitializeAllTargetInfos();
   llvm::InitializeAllTargets();
   llvm::InitializeAllTargetMCs();
   llvm::InitializeAllAsmParsers();
   llvm::InitializeAllAsmPrinters();
-  auto target_triple = llvm::sys::getDefaultTargetTriple();
-  //std::cout << "target Triple: " << target_triple << std::endl;
-  generator.get_module().setTargetTriple(target_triple);
   std::string error;
+  auto target_triple = llvm::sys::getDefaultTargetTriple();
   auto target = llvm::TargetRegistry::lookupTarget(target_triple, error);
   if (!target) {
     std::cerr << error << std::endl;
@@ -113,11 +110,12 @@ void run(const string &source) {
   pass.run(generator.get_module());
   dest.flush();
 
-  std::string cmd = "clang " + obj_filename + " -o " + filename;
+  std::string cmd = "clang " + obj_filename + " -o " + filename + " -lc -L/usr/lib";
   if (system(cmd.c_str()) != 0) {
     std::cerr << "failed to compile" << std::endl;
   }
   std::string run_cmd = "./" + filename;
+  std::cout << std::endl << "running..." << std::endl;
   if (system(run_cmd.c_str()) != 0) {
     std::cerr << "failed to run" << std::endl;
   }

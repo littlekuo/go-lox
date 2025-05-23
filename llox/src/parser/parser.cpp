@@ -9,10 +9,7 @@ std::unique_ptr<Expr> Parser::parse() {
 }
 
 std::unique_ptr<Expr> Parser::parse_expression() {
-    auto expr = parse_equality();
-    if(expr == nullptr) {
-        return nullptr;
-    }
+    return parse_equality();
 }
 
 std::unique_ptr<Expr> Parser::parse_equality() {
@@ -108,8 +105,9 @@ std::unique_ptr<Expr> Parser::parse_primary() {
     }
     if (match({TokenType::TOKEN_STRING})) {
         std::string str(previous().start, previous().length);
-        LoxObject* lox_object = new LoxString(std::move(str));
-        return std::make_unique<LiteralExpr>(lox_object,previous());
+        return std::make_unique<LiteralExpr>(
+            LoxValue(std::move(str)),  
+            previous());
     }
     if (match({TokenType::TOKEN_LEFT_PAREN})) {
         auto expr = parse_expression();
@@ -160,11 +158,11 @@ Token Parser::peek() {
 }
 
 void Parser::error(Token token, std::string message) {
-    std::cout << "[line " << token.line << "] error";
+    std::cout << "[line " << token.line << "] " << "[col " << token.column << "] error";
     if (token.type == TokenType::TOKEN_EOF) {
         std::cout << " at end";
     }
-    std::cout << ": " << message << std::endl;
+    std::cout << " : " << message << std::endl;
     has_error_ = true;
 }
 

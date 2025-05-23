@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 #include <variant>
+#include <optional>
+#include "llvm/IR/Value.h"
 
 /**
 expression     → equality ;
@@ -20,11 +22,7 @@ primary        → NUMBER | STRING | "true" | "false" | "nil"
                | "(" expression ")" ;
 */
 
-namespace llvm {
-class Value;
-}
-
-using ExprResult = LoxValue;
+using ExprResult = std::variant<LoxValue, llvm::Value*, std::monostate>;
 
 class BinaryExpr;
 class GroupingExpr;
